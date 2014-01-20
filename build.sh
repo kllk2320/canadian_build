@@ -6,7 +6,7 @@ BUILD="${MACHINE}-build-linux"
 #HOST="i686-unknown-mingw32"
 #HOST="x86_64-w64-mingw32"
 HOST="i686-w64-mingw32"
-TARGET="arm-unknown-linux-gnueabi"
+TARGET="arm-none-linux-gnueabi"
 
 
 TOP_DIR=${PWD}
@@ -79,6 +79,10 @@ export LINUX_SRC_DIR
 export LIBC_SRC_DIR
 export GCC_SRC_DIR
 export MINGW_SRC_DIR
+
+#get the number of cpus
+CPU_NUM=`grep -c processor /proc/cpuinfo`
+export CPU_NUM
 
 build_host_toolchain="no"
 build_target_toolchain="no"
@@ -304,9 +308,9 @@ cp ${SCRIPT_DIR}/final-gcc-make.sh ${FINAL_GCC_BUILD_DIR_FOR_FINAL}
 
 
 ##Start build ###
-echo $PATH
+#echo $PATH
 cp ${SCRIPT_DIR}/autobuild.sh ${BUILD_DIR}
 cd ${BUILD_DIR}
 ./autobuild.sh ${build_target_toolchain} ${build_host_toolchain}
-
+#echo ${CPU_NUM}
 cd ${TOP_DIR}

@@ -10,12 +10,12 @@ LOGFILE="binutils_make.log"
 #
 
 echo "Compiling binutils starts" >${LOGFILE}
-make -j4 -l >>${LOGFILE} 2>&1 || { echo "Compiling binutils failed"; exit 1; }
-#make -j4 -l >>${LOGFILE} 
+make -j${CPU_NUM} -l >>${LOGFILE} 2>&1 || { echo "Compiling binutils failed"; exit 1; }
+#make -j${CPU_NUM} -l >>${LOGFILE} 
 echo "Compiling binutils done">>${LOGFILE}
 
 echo "Installing binutils starts" >>${LOGFILE}
-make -j4 install >>${LOGFILE} 2>&1 || { echo "Installing binutils failed"; exit 1; }
+make -j${CPU_NUM} install >>${LOGFILE} 2>&1 || { echo "Installing binutils failed"; exit 1; }
 echo "Installing binutils done">>${LOGFILE}
 
 #tools="ar as ld strip ld.bfd"

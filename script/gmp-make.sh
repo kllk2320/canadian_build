@@ -1,8 +1,9 @@
 #!/bin/bash
 LOGFILE="gmp_make.log"
 echo "Compiling GMP starting" >${LOGFILE}
-make -j4 -l >>${LOGFILE} 2>&1 || { echo "Compiling GMP failed"; exit 1; }
-#make -j4 -l >>${LOGFILE} 
+echo "-j${CPU_NUM}" >>${LOGFILE}
+make -j${CPU_NUM} -l >>${LOGFILE} 2>&1 || { echo "Compiling GMP failed"; exit 1; }
+#make -j${CPU_NUM} -l >>${LOGFILE} 
 #ret=$?
 #if [ $ret -ne 0 ];
 #then

@@ -17,8 +17,8 @@ SYSROOT="${XTOOLS_DIR}/${TARGET}/sysroot"
 
 #echo ${INSTALL_ROOT}
 echo "Compiling libc starts" >${LOGFILE}
-make -j4 -l all >>${LOGFILE} 2>&1 || { echo "Compiling libc failed"; exit 1; }
+make -j${CPU_NUM} -l all >>${LOGFILE} 2>&1 || { echo "Compiling libc failed"; exit 1; }
 echo "Compiling libc done" >>${LOGFILE}
 echo "Installing libc starts" >${LOGFILE}
-make -j4 -l install_root=${SYSROOT} install >>${LOGFILE} 2>&1 || { echo "Installing libc failed"; exit 1; }
+make -j${CPU_NUM} -l install_root=${SYSROOT} install >>${LOGFILE} 2>&1 || { echo "Installing libc failed"; exit 1; }
 echo "Installing libc done" >>${LOGFILE}

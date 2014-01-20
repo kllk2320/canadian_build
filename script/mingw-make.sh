@@ -19,11 +19,11 @@ SYSROOT="${TOOLCHAIN_FOR_HOST_DIR}/${TARGET}/sysroot"
 
 #echo ${INSTALL_ROOT}
 echo "Compiling mingw starts" >${LOGFILE}
-make -j4 -l 1>>${LOGFILE} 2>&1 || { echo "Compiling mingw failed"; exit 1; }
+make -j${CPU_NUM} -l 1>>${LOGFILE} 2>&1 || { echo "Compiling mingw failed"; exit 1; }
 echo "Compiling mingw done" >>${LOGFILE}
 
 echo "Installing mingw starts" >${LOGFILE}
-make -j4 -l install DESTDIR=${SYSROOT} 1>>${LOGFILE} 2>&1 || { echo "Installing mingw failed"; exit 1; }
+make -j${CPU_NUM} -l install DESTDIR=${SYSROOT} 1>>${LOGFILE} 2>&1 || { echo "Installing mingw failed"; exit 1; }
 echo "Installing mingw done" >>${LOGFILE}
 
 
