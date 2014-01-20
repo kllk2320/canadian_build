@@ -1,0 +1,6 @@
+# generated files
+x-tools/
+build/
+buildtools/
+*.tar.gz
+test/
