@@ -4,3 +4,4 @@ build/
 buildtools/
 *.tar.gz
 test/
+src/
