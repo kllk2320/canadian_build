@@ -365,6 +365,43 @@ echo "Building final-gcc for final"
 echo "Build final-gcc for final Done"
 echo "======================================<<"
 
+#Step 4.10: build libexpat 
+LIBEXPAT_FOR_FINAL_DIR=${TOP}/build-libexpat-for-final
+echo "======================================>>"
+echo "Build libexpat for final Start"
+cd ${LIBEXPAT_FOR_FINAL_DIR}
+make distclean >/dev/null 2>&1
+echo "Building libexpat for final"
+./libexpat-configure.sh || { echo "configure libexpat for final failed";exit 1; }
+./libexpat-make.sh || { echo "make libexpat for final failed";exit 1; }
+echo "Build libexpat for final Done"
+echo "======================================<<"
+
+#Step 4.10: build cross-gdb 
+CROSS_GDB_FOR_FINAL_DIR=${TOP}/build-cross-gdb-for-final
+echo "======================================>>"
+echo "Build cross-gdb for final Start"
+cd ${CROSS_GDB_FOR_FINAL_DIR}
+make distclean >/dev/null 2>&1
+echo "Building cross-gdb for final"
+./cross-gdb-configure.sh || { echo "configure cross-gdb for final failed";exit 1; }
+./cross-gdb-make.sh || { echo "make cross-gdb for final failed";exit 1; }
+echo "Build cross-gdb for final Done"
+echo "======================================<<"
+
+#Step 4.11: build gdbserver 
+GDBSERVER_FOR_TARGET_DIR=${TOP}/build-gdbserver-for-target
+echo "======================================>>"
+echo "Build gdbserver for final Start"
+cd ${GDBSERVER_FOR_TARGET_DIR}
+make distclean >/dev/null 2>&1
+echo "Building gdbserver for final"
+./gdbserver-configure.sh || { echo "configure gdbserver for final failed";exit 1; }
+./gdbserver-make.sh || { echo "make gdbserver for final failed";exit 1; }
+echo "Build gdbserver for final Done"
+
+
+
 #Strip the executable binaries to reduce package size
 XTOOLS_DIR=${TOP}/../x-tools
 STRIP=${HOST}-strip

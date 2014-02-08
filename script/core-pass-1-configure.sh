@@ -61,7 +61,7 @@ LIBELF_PATH=${LIBS_PATH}
 CON_OPTIONS_1="--build=${BUILD} --host=${HOST} --target=${TARGET}"
 CON_OPTIONS_2="--prefix=${PREFIX} --with-local-prefix=${LOCAL_PREFIX} --with-sysroot=${SYSROOT}"
 CON_OPTIONS_3="--with-gmp=${GMP_PATH} --with-mpfr=${MPFR_PATH} --with-mpc=${MPC_PATH} --with-ppl=${PPL_PATH} --with-cloog=${CLOOG_PATH} "
-CON_OPTIONS_4="--with-newlib --with-pkgversion=Snail_Test-1.0.0 --with-float=hard"
+CON_OPTIONS_4="--with-pkgversion=Snail_Test-1.0.0 --with-float=hard"
 CON_OPTIONS_5="--enable-threads=no --disable-shared --enable-__cxa_atexit --enable-lto --enable-target-optspace --disable-libgomp --disable-libmudflap --disable-nls --disable-multilib --enable-languages=c"
 CON_OPTIONS_6="--with-arch=armv6 --with-cpu=arm1176jzf-s --with-tune=arm1176jzf-s --with-fpu=vfp"
 #CON_OPTIONS_6="--with-host-libstdcxx=-Wl,-Bstatic,-lstdc++,-Bdynamic -lm"

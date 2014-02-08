@@ -21,9 +21,11 @@ PPL_SRC_DIR=${SRC_DIR}/ppl-0.11.2
 CLOOG_PPL_SRC_DIR=${SRC_DIR}/cloog-ppl-0.15.11
 BINUTILS_SRC_DIR=${SRC_DIR}/binutils-2.23.1
 LINUX_SRC_DIR=${SRC_DIR}/linux-3.5.1
-LIBC_SRC_DIR=${SRC_DIR}/glibc-2.13
-GCC_SRC_DIR=${SRC_DIR}/gcc-4.6.3
-MINGW_SRC_DIR=${SRC_DIR}/mingw-w64-v2.0.7
+LIBC_SRC_DIR=${SRC_DIR}/glibc-2.17
+GCC_SRC_DIR=${SRC_DIR}/gcc-4.7.3
+MINGW_SRC_DIR=${SRC_DIR}/mingw-w64-v2.0.8
+GDB_SRC_DIR=${SRC_DIR}/gdb-7.6.2
+EXPAT_SRC_DIR=${SRC_DIR}/expat-2.1.0
 #MINGW_SRC_DIR=${SRC_DIR}/mingw-w64-v3.0.0
 
 if [ ! -d "${GMP_SRC_DIR}" ]; then
@@ -69,6 +71,17 @@ if [ ! -d "${GCC_SRC_DIR}" ]; then
    echo "[ERROR]: folder ${GCC_SRC_DIR} doesn't exit."
    exit 1
 fi
+
+if [ ! -d "${GDB_SRC_DIR}" ]; then
+   echo "[ERROR]: folder ${GDB_SRC_DIR} doesn't exit."
+   exit 1
+fi
+
+if [ ! -d "${EXPAT_SRC_DIR}" ]; then
+   echo "[ERROR]: folder ${EXPAT_SRC_DIR} doesn't exit."
+   exit 1
+fi
+
 export GMP_SRC_DIR
 export MPFR_SRC_DIR
 export MPC_SRC_DIR
@@ -79,6 +92,8 @@ export LINUX_SRC_DIR
 export LIBC_SRC_DIR
 export GCC_SRC_DIR
 export MINGW_SRC_DIR
+export GDB_SRC_DIR
+export EXPAT_SRC_DIR
 
 #get the number of cpus
 CPU_NUM=`grep -c processor /proc/cpuinfo`
@@ -122,6 +137,7 @@ TOOLCHAIN_FOR_HOST_DIR=${BUILDTOOLS_DIR}/toolchain_for_host
 
 XTOOLS_DIR=${TOP_DIR}/x-tools
 SYSROOT=${XTOOLS_DIR}/${TARGET}/sysroot
+DEBUG_ROOT=${XTOOLS_DIR}/${TARGET}/debug-root
 
 rm -rf ${BUILD_DIR}
 rm -rf ${BUILDTOOLS_DIR}
@@ -132,6 +148,7 @@ mkdir -p ${BUILD_DIR}
 mkdir -p ${BUILDTOOLS_DIR}
 mkdir -p ${BUILDTOOLS_BIN_DIR}
 mkdir -p ${LIBS_FOR_HOST_DIR}
+
 
 if [ ${build_target_toolchain} = "yes" ];
 then
@@ -151,9 +168,9 @@ fi
 
 mkdir -p ${XTOOLS_DIR}
 mkdir -p ${SYSROOT}
-mkdir -p ${SYSROOT}/usr
+mkdir -p ${SYSROOT}/usr/include
 mkdir -p ${SYSROOT}/lib
-
+mkdir -p ${DEBUG_ROOT}
 #Create wrap script for build  tools
 tools='ar as gcc g++ ld nm objcopy objdump ranlib strip'
 
@@ -306,6 +323,23 @@ mkdir ${FINAL_GCC_BUILD_DIR_FOR_FINAL}
 cp ${SCRIPT_DIR}/final-gcc-configure.sh ${FINAL_GCC_BUILD_DIR_FOR_FINAL}
 cp ${SCRIPT_DIR}/final-gcc-make.sh ${FINAL_GCC_BUILD_DIR_FOR_FINAL}
 
+#create libexpat for host build dir
+LIBEXPAT_BUILD_DIR_FOR_FINAL=${BUILD_DIR}/build-libexpat-for-final
+mkdir ${LIBEXPAT_BUILD_DIR_FOR_FINAL}
+cp ${SCRIPT_DIR}/libexpat-configure.sh ${LIBEXPAT_BUILD_DIR_FOR_FINAL}
+cp ${SCRIPT_DIR}/libexpat-make.sh ${LIBEXPAT_BUILD_DIR_FOR_FINAL}
+
+#create cross-gdb for host build dir
+CROSS_GDB_BUILD_DIR_FOR_FINAL=${BUILD_DIR}/build-cross-gdb-for-final
+mkdir ${CROSS_GDB_BUILD_DIR_FOR_FINAL}
+cp ${SCRIPT_DIR}/cross-gdb-configure.sh ${CROSS_GDB_BUILD_DIR_FOR_FINAL}
+cp ${SCRIPT_DIR}/cross-gdb-make.sh ${CROSS_GDB_BUILD_DIR_FOR_FINAL}
+
+#create gdbserver for host build dir
+GDBSERVER_BUILD_DIR_FOR_TARGET=${BUILD_DIR}/build-gdbserver-for-target
+mkdir ${GDBSERVER_BUILD_DIR_FOR_TARGET}
+cp ${SCRIPT_DIR}/gdbserver-configure.sh ${GDBSERVER_BUILD_DIR_FOR_TARGET}
+cp ${SCRIPT_DIR}/gdbserver-make.sh ${GDBSERVER_BUILD_DIR_FOR_TARGET}
 
 ##Start build ###
 #echo $PATH

@@ -14,7 +14,7 @@ BUILD_CC="${BUILD}-gcc"
 CC="${HOST}-gcc"
 AR="${HOST}-ar"
 RANLIB="${HOST}-ranlib"
-CFLAGS='-U_FORTIFY_SOURCE -mlittle-endian -mhard-float -O2 -march=armv6 -mcpu=arm1176jzf-s -mtune=arm1176jzf-s -mfpu=vfp'
+CFLAGS='-U_FORTIFY_SOURCE -mlittle-endian -mhard-float -O2 -march=armv6 -mfpu=vfp'
 LDFLAGS=''
 
 export BUILD_CC
@@ -35,8 +35,9 @@ PREFIX="/usr"
 HEADERS_DIR="${SYSROOT}/usr/include"
 CON_OPTIONS_1="--prefix=${PREFIX} --build=${BUILD} --host=${HOST}"
 CON_OPTIONS_2="--cache-file=${PWD}/config.cache --with-headers=${HEADERS_DIR}"
-CON_OPTIONS_3="--with-__thread --with-tls --with-fp --with-pkgversion=Snail_Test-1.0.0"
-CON_OPTIONS_4="--without-cvs --without-gd --disable-profile --enable-obsolete-rpc --enable-kernel=3.5.1 --enable-shared --enable-add-on=nptl,ports"
+CON_OPTIONS_3="--with-pkgversion=Snail_Test-1.0.0"
+#CON_OPTIONS_3="--with-__thread --with-tls --with-fp --with-pkgversion=Snail_Test-1.0.0"
+#CON_OPTIONS_4="--without-cvs --without-gd --disable-profile --enable-obsolete-rpc --enable-kernel=2.6.28 --enable-shared --enable-add-on=nptl,ports"
 #the linker installed during buiding bintils was cross-compiled and as such cannot be used until glibc has been installed, which means that the configure test for force-unwind support wil fail, as it relies on a working linker. Thus this option is passed to inform confiugre that force-unwind support is available without it having to run the test
 CON_OPTIONS_5="libc_cv_forced_unwind=yes libc_cv_c_cleanup=yes "
 #CON_OPTIONS_5="--disable-debug --disable-sanity-checks "
