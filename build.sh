@@ -14,21 +14,21 @@ XTOOLS_DIR="${PWD}/x-tools"
 SRC_DIR="${PWD}/src"
 PKGVERSION="lk_dissertaion-1.0.1"
 
-##0 Setup the build environment
-#rm -rf ${BUILD_DIR}
-#rm -rf ${XTOOLS_DIR}
-#
-#mkdir -p ${BUILD_DIR}
-#mkdir -p ${BUILD_DIR}/libs-build
-#mkdir -p ${BUILD_DIR}/libs-host
-#
-#mkdir -p ${XTOOLS_DIR}
-#mkdir -p ${XTOOLS_DIR}/cct-bt
-#mkdir -p ${XTOOLS_DIR}/cct-bt/sysroot
-#mkdir -p ${XTOOLS_DIR}/cct-bh
-#mkdir -p ${XTOOLS_DIR}/cct-bh/sysroot
-#mkdir -p ${XTOOLS_DIR}/cct-ht
-#mkdir -p ${XTOOLS_DIR}/cct-ht/sysroot
+#0 Setup the build environment
+rm -rf ${BUILD_DIR}
+rm -rf ${XTOOLS_DIR}
+
+mkdir -p ${BUILD_DIR}
+mkdir -p ${BUILD_DIR}/libs-build
+mkdir -p ${BUILD_DIR}/libs-host
+
+mkdir -p ${XTOOLS_DIR}
+mkdir -p ${XTOOLS_DIR}/cct-bt
+mkdir -p ${XTOOLS_DIR}/cct-bt/sysroot
+mkdir -p ${XTOOLS_DIR}/cct-bh
+mkdir -p ${XTOOLS_DIR}/cct-bh/sysroot
+mkdir -p ${XTOOLS_DIR}/cct-ht
+mkdir -p ${XTOOLS_DIR}/cct-ht/sysroot
 
 LIBS_BUILD=${BUILD_DIR}/libs-build
 LIBS_HOST=${BUILD_DIR}/libs-host
