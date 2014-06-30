@@ -1,350 +1,443 @@
 #!/bin/bash
 
-MACHINE=`uname -m`
-BUILD="${MACHINE}-build-linux"
-#HOST="i586-mingw32msvc"
-#HOST="i686-unknown-mingw32"
-#HOST="x86_64-w64-mingw32"
-HOST="i686-w64-mingw32"
-TARGET="arm-none-linux-gnueabi"
+
+#First specify the triplet
+BUILD=x86_64-build-linux
+HOST=i686-w64-mingw32
+#HOST=i586-mingw32msvc
+TARGET=arm-pi-linux-gnueabi
 
 
-TOP_DIR=${PWD}
 
-#SRC_DIR=${TOP_DIR}/src
-SRC_DIR="/home/snail/compilers/win_arm/src"
+BUILD_DIR="${PWD}/build"
+XTOOLS_DIR="${PWD}/x-tools"
+SRC_DIR="${PWD}/src"
+PKGVERSION="lk_dissertaion-1.0.1"
 
-GMP_SRC_DIR=${SRC_DIR}/gmp-5.0.2
-MPFR_SRC_DIR=${SRC_DIR}/mpfr-3.1.2
-MPC_SRC_DIR=${SRC_DIR}/mpc-1.0.1
-PPL_SRC_DIR=${SRC_DIR}/ppl-0.11.2
-CLOOG_PPL_SRC_DIR=${SRC_DIR}/cloog-ppl-0.15.11
-BINUTILS_SRC_DIR=${SRC_DIR}/binutils-2.23.1
-LINUX_SRC_DIR=${SRC_DIR}/linux-3.5.1
-LIBC_SRC_DIR=${SRC_DIR}/glibc-2.17
-GCC_SRC_DIR=${SRC_DIR}/gcc-4.7.3
-MINGW_SRC_DIR=${SRC_DIR}/mingw-w64-v2.0.8
-GDB_SRC_DIR=${SRC_DIR}/gdb-7.6.2
-EXPAT_SRC_DIR=${SRC_DIR}/expat-2.1.0
-#MINGW_SRC_DIR=${SRC_DIR}/mingw-w64-v3.0.0
+##0 Setup the build environment
+#rm -rf ${BUILD_DIR}
+#rm -rf ${XTOOLS_DIR}
+#
+#mkdir -p ${BUILD_DIR}
+#mkdir -p ${BUILD_DIR}/libs-build
+#mkdir -p ${BUILD_DIR}/libs-host
+#
+#mkdir -p ${XTOOLS_DIR}
+#mkdir -p ${XTOOLS_DIR}/cct-bt
+#mkdir -p ${XTOOLS_DIR}/cct-bt/sysroot
+#mkdir -p ${XTOOLS_DIR}/cct-bh
+#mkdir -p ${XTOOLS_DIR}/cct-bh/sysroot
+#mkdir -p ${XTOOLS_DIR}/cct-ht
+#mkdir -p ${XTOOLS_DIR}/cct-ht/sysroot
 
-if [ ! -d "${GMP_SRC_DIR}" ]; then
-   echo "[ERROR]: folder ${GMP_SRC_DIR} doesn't exit."
-   exit 1
-fi
+LIBS_BUILD=${BUILD_DIR}/libs-build
+LIBS_HOST=${BUILD_DIR}/libs-host
 
-if [ ! -d "${MPFR_SRC_DIR}" ]; then
-   echo "[ERROR]: folder ${MPFR_SRC_DIR} doesn't exit."
-   exit 1
-fi
+CCT_BT_PREFIX=${XTOOLS_DIR}/cct-bt
+CCT_BT_SYSROOT=${CCT_BT_PREFIX}/sysroot
 
-if [ ! -d "${MPC_SRC_DIR}" ]; then
-   echo "[ERROR]: folder ${MPC_SRC_DIR} doesn't exit."
-   exit 1
-fi
+CCT_BH_PREFIX=${XTOOLS_DIR}/cct-bh
+CCT_BH_SYSROOT=${CCT_BH_PREFIX}/sysroot
 
-if [ ! -d "${PPL_SRC_DIR}" ]; then
-   echo "[ERROR]: folder ${PPL_SRC_DIR} doesn't exit."
-   exit 1
-fi
+CCT_HT_PREFIX=${XTOOLS_DIR}/cct-ht
+CCT_HT_SYSROOT=${CCT_HT_PREFIX}/sysroot
 
-if [ ! -d "${CLOOG_PPL_SRC_DIR}" ]; then
-   echo "[ERROR]: folder ${CLOOG_PPL_SRC_DIR} doesn't exit."
-   exit 1
-fi
+CPU_NUM=8
 
-if [ ! -d "${BINUTILS_SRC_DIR}" ]; then
-   echo "[ERROR]: folder ${BINUTILS_SRC_DIR} doesn't exit."
-   exit 1
-fi
+GMP_SRC_DIR=${SRC_DIR}/gmp
+MPFR_SRC_DIR=${SRC_DIR}/mpfr
+MPC_SRC_DIR=${SRC_DIR}/mpc
+PPL_SRC_DIR=${SRC_DIR}/ppl
+CLOOG_PPL_SRC_DIR=${SRC_DIR}/cloog-ppl
+BINUTILS_SRC_DIR=${SRC_DIR}/binutils
+GLIBC_SRC_DIR=${SRC_DIR}/glibc
+GCC_SRC_DIR=${SRC_DIR}/gcc
+MINGW_SRC_DIR=${SRC_DIR}/mingw-w64
+GDB_SRC_DIR=${SRC_DIR}/gdb
+LINUX_SRC_DIR=${SRC_DIR}/linux
+EXPAT_SRC_DIR=${SRC_DIR}/expat
 
-if [ ! -d "${LINUX_SRC_DIR}" ]; then
-   echo "[ERROR]: folder ${LINUX_SRC_DIR} doesn't exit."
-   exit 1
-fi
+#Add the bin directory to the 'PATH' variable
+export PATH=${PATH}:${CCT_BT_PREFIX}/bin:${CCT_BH_PREFIX}/bin
 
-if [ ! -d "${LIBC_SRC_DIR}" ]; then
-   echo "[ERROR]: folder ${LIBC_SRC_DIR} doesn't exit."
-   exit 1
-fi
-if [ ! -d "${GCC_SRC_DIR}" ]; then
-   echo "[ERROR]: folder ${GCC_SRC_DIR} doesn't exit."
-   exit 1
-fi
-
-if [ ! -d "${GDB_SRC_DIR}" ]; then
-   echo "[ERROR]: folder ${GDB_SRC_DIR} doesn't exit."
-   exit 1
-fi
-
-if [ ! -d "${EXPAT_SRC_DIR}" ]; then
-   echo "[ERROR]: folder ${EXPAT_SRC_DIR} doesn't exit."
-   exit 1
-fi
-
-export GMP_SRC_DIR
-export MPFR_SRC_DIR
-export MPC_SRC_DIR
-export PPL_SRC_DIR
-export CLOOG_PPL_SRC_DIR
-export BINUTILS_SRC_DIR
-export LINUX_SRC_DIR
-export LIBC_SRC_DIR
-export GCC_SRC_DIR
-export MINGW_SRC_DIR
-export GDB_SRC_DIR
-export EXPAT_SRC_DIR
-
-#get the number of cpus
-CPU_NUM=`grep -c processor /proc/cpuinfo`
-export CPU_NUM
-
-build_host_toolchain="no"
-build_target_toolchain="no"
-
-if [ -z `which ${HOST}-gcc` ];
-then
-#   echo "[ERROR]:Cann't find cross-compile toolchain for ${HOST}"
-#   exit 1
-    build_host_toolchain="yes"
-    if [ ! -d "${MINGW_SRC_DIR}" ]; then
-       echo "[ERROR]: folder ${MINGW_SRC_DIR} doesn't exit."
-       exit 1
-    fi
-
-fi
-
-if [ -z `which ${TARGET}-gcc` ];
-then
-#   echo "[ERROR]:Cann't find cross-compile toolchain for ${TARGET}"
-#   exit 1
-    build_target_toolchain="yes"
-fi
-
-export ARG_BUILD=${BUILD}
-export ARG_HOST=${HOST}
-export ARG_TARGET=${TARGET}
-
-#Establish the build directories
-BUILD_DIR=${TOP_DIR}/build
-BUILDTOOLS_DIR=${TOP_DIR}/buildtools
-
-BUILDTOOLS_BIN_DIR=${BUILDTOOLS_DIR}/bin
-LIBS_FOR_BUILD_DIR=${BUILDTOOLS_DIR}/libs_for_build
-LIBS_FOR_HOST_DIR=${BUILDTOOLS_DIR}/libs_for_host
-TOOLCHAIN_FOR_TARGET_DIR=${BUILDTOOLS_DIR}/toolchain_for_target
-TOOLCHAIN_FOR_HOST_DIR=${BUILDTOOLS_DIR}/toolchain_for_host
-
-XTOOLS_DIR=${TOP_DIR}/x-tools
-SYSROOT=${XTOOLS_DIR}/${TARGET}/sysroot
-DEBUG_ROOT=${XTOOLS_DIR}/${TARGET}/debug-root
-
-rm -rf ${BUILD_DIR}
-rm -rf ${BUILDTOOLS_DIR}
-rm -rf ${XTOOLS_DIR}
-
-mkdir -p ${BUILD_DIR}
-
-mkdir -p ${BUILDTOOLS_DIR}
-mkdir -p ${BUILDTOOLS_BIN_DIR}
-mkdir -p ${LIBS_FOR_HOST_DIR}
+#1.build the compiler cct-bt (x86-linux-hosted/arm-linux-targeted)
+echo "==========================================================>>"
+echo "        Start Building cct-build-target                     "
+echo "============================================================"
 
 
-if [ ${build_target_toolchain} = "yes" ];
-then
-    mkdir -p ${LIBS_FOR_BUILD_DIR}
-    mkdir -p ${TOOLCHAIN_FOR_TARGET_DIR}
-    mkdir -p ${TOOLCHAIN_FOR_TARGET_DIR}/bin
-    PATH="${TOOLCHAIN_FOR_TARGET_DIR}/bin:${PATH}"
-fi
 
-if [ ${build_host_toolchain} = "yes" ];
-then
-    mkdir -p ${LIBS_FOR_BUILD_DIR}
-    mkdir -p ${TOOLCHAIN_FOR_HOST_DIR}
-    mkdir -p ${TOOLCHAIN_FOR_HOST_DIR}/bin
-    PATH="${TOOLCHAIN_FOR_HOST_DIR}/bin:${PATH}"
-fi
 
-mkdir -p ${XTOOLS_DIR}
-mkdir -p ${SYSROOT}
-mkdir -p ${SYSROOT}/usr/include
-mkdir -p ${SYSROOT}/lib
-mkdir -p ${DEBUG_ROOT}
-#Create wrap script for build  tools
-tools='ar as gcc g++ ld nm objcopy objdump ranlib strip'
+#1.1 Build The GMP library for build
+echo "==========================================================>>"
+echo "        Building GMP library for build machine              "
+echo "==========================================================<<"
+mkdir -p ${BUILD_DIR}/build-gmp-build
+cd ${BUILD_DIR}/build-gmp-build
+export CFLAGS="-O2 -pipe" 
+${GMP_SRC_DIR}/configure --build=${BUILD} --host=${BUILD} --prefix=${LIBS_BUILD} --enable-cxx --disable-shared --enable-mpbsd 1>log.txt 2>&1 || { echo "Configuring GMP failed"; exit 1; }
+make -j${CPU_NUM} 1>>log.txt 2>&1 || { echo "Compiling GMP failed"; exit 1; }
+make install 1>>log.txt 2>&1 || { echo "Compiling GMP failed"; exit 1; }
 
-for t in $tools;
+#1.2 Build The MPFR library for build
+echo "==========================================================>>"
+echo "        Building MPFR library for build machine             "
+echo "==========================================================<<"
+mkdir -p ${BUILD_DIR}/build-mpfr-build
+cd ${BUILD_DIR}/build-mpfr-build
+export CFLAGS="-O2 -pipe" 
+${MPFR_SRC_DIR}/configure --build=${BUILD} --host=${BUILD} --prefix=${LIBS_BUILD} --with-gmp=${LIBS_BUILD} --disable-shared 1>log.txt 2>&1 || { echo "Configuring MPFR failed"; exit 1; }
+make -j${CPU_NUM} 1>>log.txt 2>&1 || { echo "Compiling MPFR failed"; exit 1; }
+make install 1>>log.txt 2>&1 || { echo "Compiling MPFR failed"; exit 1; }
+
+#1.3 Build The MPC library for build
+echo "==========================================================>>"
+echo "        Building MPC library for build machine              "
+echo "==========================================================<<"
+mkdir -p ${BUILD_DIR}/build-mpc-build
+cd ${BUILD_DIR}/build-mpc-build
+export CFLAGS="-O2 -pipe" 
+${MPC_SRC_DIR}/configure --build=${BUILD} --host=${BUILD} --prefix=${LIBS_BUILD} --with-gmp=${LIBS_BUILD} --with-mpfr=${LIBS_BUILD} --disable-shared 1>log.txt 2>&1 || { echo "Configuring MPFR failed"; exit 1; }
+make -j${CPU_NUM} 1>>log.txt 2>&1 || { echo "Compiling MPFR failed"; exit 1; }
+make install 1>>log.txt 2>&1 || { echo "Compiling MPFR failed"; exit 1; }
+
+#1.4 Build The PPL library for build
+echo "==========================================================>>"
+echo "        Building PPL library for build machine              "
+echo "==========================================================<<"
+mkdir -p ${BUILD_DIR}/build-ppl-build
+cd ${BUILD_DIR}/build-ppl-build
+export CFLAGS="-O2 -pipe" 
+${PPL_SRC_DIR}/configure --build=${BUILD} --host=${BUILD} --prefix=${LIBS_BUILD} --with-gmp=${LIBS_BUILD} --disable-shared --enable-watchdog --enable-interfaces="c c++" 1>log.txt 2>&1 || { echo "Configuring PPL failed"; exit 1; }
+make -j${CPU_NUM} 1>>log.txt 2>&1 || { echo "Compiling PPL failed"; exit 1; }
+make install 1>>log.txt 2>&1 || { echo "Compiling PPL failed"; exit 1; }
+
+
+#1.5 Build The Cloog/PPL library for build
+echo "==========================================================>>"
+echo "        Building Cloog library for build machine            "
+echo "==========================================================<<"
+mkdir -p ${BUILD_DIR}/build-cloog-ppl-build
+cd ${BUILD_DIR}/build-cloog-ppl-build 
+export CFLAGS="-O2 -pipe" 
+${CLOOG_PPL_SRC_DIR}/configure --build=${BUILD} --host=${BUILD} --prefix=${LIBS_BUILD} --with-gmp=${LIBS_BUILD} --with-ppl=${LIBS_BUILD} --disable-shared --with-bits=gmp --with-host-libstdcxx=-lstdc++  1>log.txt 2>&1 || { echo "Configuring CLOOG/PPL failed"; exit 1; }
+make -j${CPU_NUM} 1>>log.txt 2>&1 || { echo "Compiling CLOOG/PPL failed"; exit 1; }
+make install 1>>log.txt 2>&1 || { echo "Compiling CLOOG/PPL failed"; exit 1; }
+
+#1.6 Build the Binutils library for cct-bt
+echo "==========================================================>>"
+echo "        Building Binutls for cct-build-target               "
+echo "==========================================================<<"
+mkdir -p ${BUILD_DIR}/build-binutils-cct-bt
+cd ${BUILD_DIR}/build-binutils-cct-bt 
+export CFLAGS="-O2 -pipe" 
+${BINUTILS_SRC_DIR}/configure --build=${BUILD} --host=${BUILD} --target=${TARGET} --prefix=${CCT_BT_PREFIX} --with-sysroot=${CCT_BT_SYSROOT} --with-pkgversion=${PKGVERSION} --disable-werror --disable-multilib --disable-nls --disable-shared --enable-ld=yes --enable-gold=no  1>log.txt 2>&1 || { echo "Configuring Binutils failed"; exit 1; }
+make -j${CPU_NUM} 1>>log.txt 2>&1 || { echo "Compiling Binutils failed"; exit 1; }
+make install 1>>log.txt 2>&1 || { echo "Compiling Binutils failed"; exit 1; }
+
+#1.7 Build the core-pass-1 for cct-bt
+echo "==========================================================>>"
+echo "        Building core-pass-1 for cct-build-target           "
+echo "==========================================================<<"
+mkdir -p ${BUILD_DIR}/build-core-pass-1-cct-bt
+cd ${BUILD_DIR}/build-core-pass-1-cct-bt 
+export CFLAGS="-O2 -pipe" 
+${GCC_SRC_DIR}/configure --build=${BUILD} --host=${BUILD} --target=${TARGET} --prefix=${CCT_BT_PREFIX} --without-headers --with-pkgversion=${PKGVERSION} --with-gmp=${LIBS_BUILD} --with-mpfr=${LIBS_BUILD} --with-mpc=${LIBS_BUILD} --with-ppl=${LIBS_BUILD} --with--cloog=${LIBS_BUILD} --with-host-libstdcxx="-Wl,-Bstatic,-lstdc++,-Bdynamic -lm -L${LIBS_BUILD}/lib -lpwl" 1>log.txt 2>&1 || { echo "Configuring core-pass-1 failed"; exit 1; }
+make -j${CPU_NUM} all-gcc 1>>log.txt 2>&1 || { echo "Compiling core-pass-1 failed"; exit 1; }
+make -j${CPU_NUM} install-gcc 1>>log.txt 2>&1 || { echo "Installing core-pass-1 failed"; exit 1; }
+
+#1.8 Build the linux kernel headers for cct-bt
+echo "==========================================================>>"
+echo "        Installing kerel headers for cct-build-target       "
+echo "==========================================================<<"
+mkdir -p ${BUILD_DIR}/build-kernel-headers-cct-bt
+cd ${BUILD_DIR}/build-kernel-headers-cct-bt
+export CFLAGS="-O2 -pipe" 
+make -C ${LINUX_SRC_DIR} O=${PWD} ARCH=arm INSTALL_HDR_PATH=${CCT_BT_SYSROOT}/usr V=0 headers_install 1>log.txt 2>&1 || { echo "Installing kernel headers failed"; exit 1; }
+
+#1.9 Build the libc-startfiles for cct-bt
+echo "==========================================================>>"
+echo "        Building Glibc startfiles for cct-build-target      "
+echo "==========================================================<<"
+mkdir -p ${BUILD_DIR}/build-glibc-startfiles-cct-bt
+cd ${BUILD_DIR}/build-glibc-startfiles-cct-bt
+export CFLAGS="-O2 -pipe" 
+${GLIBC_SRC_DIR}/configure --build=${BUILD} --host=${TARGET} --prefix=/usr --with-headers=${CCT_BT_SYSROOT}/usr/include --with-pkgversion=${PKGVERSION} libc_cv_forced_unwind=yes libc_cv_c_cleanup=yes 1>log.txt 2>&1 || { echo "Configuring libc-startfiles failed"; exit 1; }
+
+make -j${CPU_NUM} install_root=${CCT_BT_SYSROOT} install-bootstrap-headers=yes install-headers 1>>log.txt 2>&1 || { echo "Installing libc headers failed"; exit 1;}
+touch  ${CCT_BT_SYSROOT}/usr/include/gnu/stubs.h
+cp bits/stdio_lim.h ${CCT_BT_SYSROOT}/usr/include/bits
+mkdir -p ${CCT_BT_SYSROOT}/usr/lib
+make -j${CPU_NUM} csu/subdir_lib 1>>log.txt 2>&1 || { echo "Compiling libc-startfiles failed"; exit 1; }
+cp csu/crti.o csu/crtn.o ${CCT_BT_SYSROOT}/usr/lib
+${TARGET}-gcc -nostdlib -nostartfiles -shared -x c /dev/null -o ${CCT_BT_SYSROOT}/usr/lib/libc.so
+
+
+#1.10 Build the core-pass-2 for cct-bt
+echo "==========================================================>>"
+echo "        Building core-pass-2 for cct-build-target           "
+echo "==========================================================<<"
+mkdir -p ${BUILD_DIR}/build-core-pass-2-cct-bt
+cd ${BUILD_DIR}/build-core-pass-2-cct-bt 
+export CFLAGS="-O2 -pipe" 
+${GCC_SRC_DIR}/configure --build=${BUILD} --host=${BUILD} --target=${TARGET} --prefix=${CCT_BT_PREFIX} --with-local-prefix=${CCT_BT_SYSROOT} --with-sysroot=${CCT_BT_SYSROOT} --with-pkgversion=${PKGVERSION} --with-gmp=${LIBS_BUILD} --with-mpfr=${LIBS_BUILD} --with-mpc=${LIBS_BUILD} --with-ppl=${LIBS_BUILD} --with--cloog=${LIBS_BUILD} --with-host-libstdcxx="-Wl,-Bstatic,-lstdc++,-Bdynamic -lm -L${LIBS_BUILD}/lib -lpwl" --enable-languages=c --disable-multilib --disable-nls  1>log.txt 2>&1 || { echo "Configuring core-pass-2 failed"; exit 1; }
+make -j${CPU_NUM} all-gcc all-target-libgcc 1>>log.txt 2>&1 || { echo "Compiling core-pass-2 failed"; exit 1; }
+make -j${CPU_NUM} install-gcc install-target-libgcc 1>>log.txt 2>&1 || { echo "Installing core-pass-2 failed"; exit 1; }
+
+#1.11 Build the glibc for cct-bt
+echo "==========================================================>>"
+echo "        Building Glibc for cct-build-target                 "
+echo "==========================================================<<"
+mkdir -p ${BUILD_DIR}/build-glibc-cct-bt
+cd ${BUILD_DIR}/build-glibc-cct-bt
+export CFLAGS="-O2" 
+${GLIBC_SRC_DIR}/configure --build=${BUILD} --host=${TARGET} --prefix=/usr --with-headers=${CCT_BT_SYSROOT}/usr/include --with-pkgversion=${PKGVERSION} --enable-add-on=nptl,ports libc_cv_forced_unwind=yes libc_cv_c_cleanup=yes 1>log.txt 2>&1 || { echo "Configuring libc failed"; exit 1; }
+make -j${CPU_NUM} all 1>>log.txt 2>&1 || { echo "Compiling libc failed "; exit 1; }
+make -j${CPU_NUM} install_root=${CCT_BT_SYSROOT} install 1>>log.txt 2>&1 || { echo "Installing libc failed "; exit 1; }
+
+#1.12 Build the final gcc for cct-bt
+echo "==========================================================>>"
+echo "        Building final gcc for cct-build-target             "
+echo "==========================================================<<"
+mkdir -p ${BUILD_DIR}/build-final-gcc-cct-bt
+cd ${BUILD_DIR}/build-final-gcc-cct-bt 
+export CFLAGS="-O2 -pipe" 
+#export CFLAGS_FOR_TARGET="-mlittle-endian -mhard-float -march=armv6 -mcpu=arm1176jzf-s -mtune=arm1176jzf-s -mfpu=vfp"
+#export CXXFLAGS_FOR_TARGET="-mlittle-endian -mhard-float -march=armv6 -mcpu=arm1176jzf-s -mtune=arm1176jzf-s -mfpu=vfp"
+${GCC_SRC_DIR}/configure --build=${BUILD} --host=${BUILD} --target=${TARGET} --prefix=${CCT_BT_PREFIX} --with-local-prefix=${CCT_BT_SYSROOT} --with-sysroot=${CCT_BT_SYSROOT} --with-pkgversion=${PKGVERSION} --with-gmp=${LIBS_BUILD} --with-mpfr=${LIBS_BUILD} --with-mpc=${LIBS_BUILD} --with-ppl=${LIBS_BUILD} --with--cloog=${LIBS_BUILD} --with-host-libstdcxx="-Wl,-Bstatic,-lstdc++,-Bdynamic -lm -L${LIBS_BUILD}/lib -lpwl" --enable-threads=posix --enable-languages=c,c++ --disable-multilib --disable-nls  1>log.txt 2>&1 || { echo "Configuring core-pass-2 failed"; exit 1; }
+make -j${CPU_NUM} all 1>>log.txt 2>&1 || { echo "Compiling core-pass-2 failed"; exit 1; }
+make -j${CPU_NUM} install 1>>log.txt 2>&1 || { echo "Installing core-pass-2 failed"; exit 1; }
+
+
+#2 build the compiler cct-bh (x86-linux-hosted/Windows-targeted)
+echo "==========================================================>>"
+echo "        Start building cct-build-host                       "
+echo "==========================================================<<"
+
+#2.1 build the binutils for cct-bh
+echo "==========================================================>>"
+echo "        Building Binutls for cct-build-host                 "
+echo "==========================================================<<"
+mkdir -p ${BUILD_DIR}/build-binutils-cct-bh
+cd ${BUILD_DIR}/build-binutils-cct-bh 
+export CFLAGS="-O2 -pipe" 
+${BINUTILS_SRC_DIR}/configure --build=${BUILD} --host=${BUILD} --target=${HOST} --prefix=${CCT_BH_PREFIX} --with-sysroot=${CCT_BH_SYSROOT} --with-pkgversion=${PKGVERSION} --disable-werror --disable-multilib --disable-nls --enable-ld=yes --enable-gold=no  1>log.txt 2>&1 || { echo "Configuring Binutils failed"; exit 1; }
+make -j${CPU_NUM} 1>>log.txt 2>&1 || { echo "Compiling Binutils failed"; exit 1; }
+make install 1>>log.txt 2>&1 || { echo "Compiling Binutils failed"; exit 1; }
+
+
+#2.2 install MinGW-w64 headers for cct-bh
+echo "==========================================================>>"
+echo "        Installing MinGW-w64 headers for cct-build-host     "
+echo "==========================================================<<"
+mkdir -p ${BUILD_DIR}/build-mingw-headers-cct-bh
+cd ${BUILD_DIR}/build-mingw-headers-cct-bh 
+${MINGW_SRC_DIR}/mingw-w64-headers/configure --build=${BUILD} --host=${HOST} --prefix=${CCT_BH_SYSROOT} 1>log.txt 2>&1 ||{ echo "Configuring MinGW Headers failed"; exit 1;} 
+make install 1>>log.txt 2>&1 || { echo "Compiling MinGW Headers failed"; exit 1; }
+ln -s ${CCT_BH_SYSROOT}/${HOST} ${CCT_BH_SYSROOT}/mingw
+
+#2.3 build the core-pass for cct-bh
+echo "==========================================================>>"
+echo "        Building core-pass for cct-build-host               "
+echo "==========================================================<<"
+mkdir -p ${BUILD_DIR}/build-core-pass-cct-bh
+cd ${BUILD_DIR}/build-core-pass-cct-bh
+${GCC_SRC_DIR}/configure --build=${BUILD} --host=${BUILD} --target=${HOST} --prefix=${CCT_BH_PREFIX} --with-sysroot=${CCT_BH_SYSROOT} --with-pkgversion=${PKGVERSION} --with-gmp=${LIBS_BUILD} --with-mpfr=${LIBS_BUILD} --with-mpc=${LIBS_BUILD} --with-ppl=${LIBS_BUILD} --with--cloog=${LIBS_BUILD} --with-host-libstdcxx="-Wl,-Bstatic,-lstdc++,-Bdynamic -lm -L${LIBS_BUILD}/lib -lpwl" 1>log.txt 2>&1 || { echo "Configuring the core pass failed"; exit 1; }
+make -j${CPU_NUM} all-gcc 1>>log.txt 2>&1 || { echo "Compiling the core pass failed"; exit 1; }
+make install-gcc 1>>log.txt 2>&1 || { echo "Installing the core pass failed"; exit 1; }
+
+#2.4 build the MinGW-w64 for cct-bh
+echo "==========================================================>>"
+echo "        Building MinGW-w64 for cct-build-host               "
+echo "==========================================================<<"
+mkdir -p ${BUILD_DIR}/build-mingw-cct-bh
+cd ${BUILD_DIR}/build-mingw-cct-bh 
+${MINGW_SRC_DIR}/configure --build=${BUILD} --host=${HOST} --prefix=${CCT_BH_SYSROOT} 1>log.txt 2>&1 ||{ echo "Configuring MinGW Headers failed"; exit 1;} 
+make -j${CPU_NUM} 1>>log.txt 2>&1 || { echo "Compiling the MinGW failed"; exit 1; }
+make install 1>>log.txt 2>&1 || { echo "Installing the MinGW failed"; exit 1; }
+
+sed -i '
+/<crtdefs.h>/ a\
+typedef int daddr_t;\
+typedef char *  caddr_t;
+' ${CCT_BH_SYSROOT}/mingw/include/sys/types.h 
+
+#2.5 build the final compiler
+echo "==========================================================>>"
+echo "        Building final gcc for cct-build-host               "
+echo "==========================================================<<"
+mkdir -p ${BUILD_DIR}/build-final-gcc-cct-bh
+cd ${BUILD_DIR}/build-final-gcc-cct-bh
+${GCC_SRC_DIR}/configure --build=${BUILD} --host=${BUILD} --target=${HOST} --prefix=${CCT_BH_PREFIX} --with-sysroot=${CCT_BH_SYSROOT} --with-pkgversion=${PKGVERSION} --with-gmp=${LIBS_BUILD} --with-mpfr=${LIBS_BUILD} --with-mpc=${LIBS_BUILD} --with-ppl=${LIBS_BUILD} --with--cloog=${LIBS_BUILD} --with-host-libstdcxx="-Wl,-Bstatic,-lstdc++,-Bdynamic -lm -L${LIBS_BUILD}/lib -lpwl"  --enable-languages=c,c++  --enable-__cxa_atexit --disable-multilib 1>log.txt 2>&1 || { echo "Configuring the final gcc failed"; exit 1; }
+make -j${CPU_NUM} all 1>>log.txt 2>&1 || { echo "Compiling the final gcc failed"; exit 1; }
+make install 1>>log.txt 2>&1 || { echo "Installing the final gcc failed"; exit 1; }
+
+
+#3.build the compilers cct-ht (Windows-hosted/arm-linux-targeted) 
+echo "==========================================================>>"
+echo "        Start building cct-host-target                      "
+echo "==========================================================<<"
+
+
+#3.1 Build The GMP library for host
+echo "==========================================================>>"
+echo "        Building GMP library for host machine              "
+echo "==========================================================<<"
+mkdir -p ${BUILD_DIR}/build-gmp-host
+cd ${BUILD_DIR}/build-gmp-host
+export CFLAGS="-O2 -pipe" 
+${GMP_SRC_DIR}/configure --build=${BUILD} --host=${HOST} --prefix=${LIBS_HOST} --enable-cxx --disable-shared --enable-mpbsd 1>log.txt 2>&1 || { echo "Configuring GMP failed"; exit 1; }
+make -j${CPU_NUM} 1>>log.txt 2>&1 || { echo "Compiling GMP failed"; exit 1; }
+make install 1>>log.txt 2>&1 || { echo "Compiling GMP failed"; exit 1; }
+
+#3.2 Build The MPFR library for host
+echo "==========================================================>>"
+echo "        Building MPFR library for host machine              "
+echo "==========================================================<<"
+mkdir -p ${BUILD_DIR}/build-mpfr-host
+cd ${BUILD_DIR}/build-mpfr-host
+export CFLAGS="-O2 -pipe" 
+${MPFR_SRC_DIR}/configure --build=${BUILD} --host=${HOST} --prefix=${LIBS_HOST} --with-gmp=${LIBS_HOST} --disable-shared 1>log.txt 2>&1 || { echo "Configuring MPFR failed"; exit 1; }
+make -j${CPU_NUM} 1>>log.txt 2>&1 || { echo "Compiling MPFR failed"; exit 1; }
+make install 1>>log.txt 2>&1 || { echo "Compiling MPFR failed"; exit 1; }
+
+#3.3 Build The MPC library for host
+echo "==========================================================>>"
+echo "        Building MPC library for host machine               "
+echo "==========================================================<<"
+mkdir -p ${BUILD_DIR}/build-mpc-host
+cd ${BUILD_DIR}/build-mpc-host
+export CFLAGS="-O2 -pipe" 
+${MPC_SRC_DIR}/configure --build=${BUILD} --host=${HOST} --prefix=${LIBS_HOST} --with-gmp=${LIBS_HOST} --with-mpfr=${LIBS_HOST} --disable-shared 1>log.txt 2>&1 || { echo "Configuring MPFR failed"; exit 1; }
+make -j${CPU_NUM} 1>>log.txt 2>&1 || { echo "Compiling MPFR failed"; exit 1; }
+make install 1>>log.txt 2>&1 || { echo "Compiling MPFR failed"; exit 1; }
+
+#3.4 Build The PPL library for host
+echo "==========================================================>>"
+echo "        Building PPL library for host machine               "
+echo "==========================================================<<"
+mkdir -p ${BUILD_DIR}/build-ppl-host
+cd ${BUILD_DIR}/build-ppl-host
+export CFLAGS="-O2 -pipe" 
+${PPL_SRC_DIR}/configure --build=${BUILD} --host=${HOST} --prefix=${LIBS_HOST} --with-gmp=${LIBS_HOST} --disable-shared --enable-watchdog --enable-interfaces="c c++" 1>log.txt 2>&1 || { echo "Configuring PPL failed"; exit 1; }
+make -j${CPU_NUM} 1>>log.txt 2>&1 || { echo "Compiling PPL failed"; exit 1; }
+make install 1>>log.txt 2>&1 || { echo "Compiling PPL failed"; exit 1; }
+
+#3.5 Build The Cloog/PPL library for host
+echo "==========================================================>>"
+echo "        Building CLOOG library for host machine             "
+echo "==========================================================<<"
+mkdir -p ${BUILD_DIR}/build-cloog-ppl-host
+cd ${BUILD_DIR}/build-cloog-ppl-host 
+export CFLAGS="-O2 -pipe" 
+${CLOOG_PPL_SRC_DIR}/configure --build=${BUILD} --host=${HOST} --prefix=${LIBS_HOST} --with-gmp=${LIBS_HOST} --with-ppl=${LIBS_HOST} --disable-shared --with-bits=gmp --with-host-libstdcxx=-lstdc++  1>log.txt 2>&1 || { echo "Configuring CLOOG/PPL failed"; exit 1; }
+make -j${CPU_NUM} 1>>log.txt 2>&1 || { echo "Compiling CLOOG/PPL failed"; exit 1; }
+make install 1>>log.txt 2>&1 || { echo "Compiling CLOOG/PPL failed"; exit 1; }
+
+#3.6 Build the binutils for cct-ht
+echo "==========================================================>>"
+echo "        Building Binutls for cct-host-target                "
+echo "==========================================================<<"
+mkdir -p ${BUILD_DIR}/build-binutils-cct-ht
+cd ${BUILD_DIR}/build-binutils-cct-ht 
+export CFLAGS="-O2 -pipe" 
+${BINUTILS_SRC_DIR}/configure --build=${BUILD} --host=${HOST} --target=${TARGET} --prefix=${CCT_HT_PREFIX} --with-sysroot=${CCT_HT_SYSROOT} --with-pkgversion=${PKGVERSION} --disable-werror --disable-multilib --disable-nls --enable-ld=yes --enable-gold=no  1>log.txt 2>&1 || { echo "Configuring Binutils failed"; exit 1; }
+make -j${CPU_NUM} 1>>log.txt 2>&1 || { echo "Compiling Binutils failed"; exit 1; }
+make install 1>>log.txt 2>&1 || { echo "Compiling Binutils failed"; exit 1; }
+
+#3.7 Build the linux kernel headers for cct-ht
+echo "==========================================================>>"
+echo "        Installing kerel headers for cct-host-target        "
+echo "==========================================================<<"
+mkdir -p ${BUILD_DIR}/build-kernel-headers-cct-ht
+cd ${BUILD_DIR}/build-kernel-headers-cct-ht
+export CFLAGS="-O2 -pipe" 
+make -C ${LINUX_SRC_DIR} O=${PWD} ARCH=arm INSTALL_HDR_PATH=${CCT_HT_SYSROOT}/usr V=0 headers_install 1>log.txt 2>&1 || { echo "Installing kernel headers failed"; exit 1; }
+
+#3.8 Build the glibc for cct-ht
+echo "==========================================================>>"
+echo "        Building Glibc for cct-host-target                  "
+echo "==========================================================<<"
+mkdir -p ${BUILD_DIR}/build-glibc-cct-ht
+cd ${BUILD_DIR}/build-glibc-cct-ht
+export CFLAGS="-O2" 
+${GLIBC_SRC_DIR}/configure --build=${BUILD} --host=${TARGET} --prefix=/usr --with-pkgversion=${PKGVERSION} --enable-add-on=nptl,ports  1>log.txt 2>&1 || { echo "Configuring libc failed"; exit 1; }
+make -j${CPU_NUM} all 1>>log.txt 2>&1 || { echo "Compiling libc failed "; exit 1; }
+make -j${CPU_NUM} install_root=${CCT_HT_SYSROOT} install 1>>log.txt 2>&1 || { echo "Installing libc failed "; exit 1; }
+
+#3.9 Build the final compiler for cct-ht
+echo "==========================================================>>"
+echo "        Building final gcc for cct-host-target              "
+echo "==========================================================<<"
+mkdir -p ${BUILD_DIR}/build-final-gcc-cct-ht
+cd ${BUILD_DIR}/build-final-gcc-cct-ht
+${GCC_SRC_DIR}/configure --build=${BUILD} --host=${HOST} --target=${TARGET} --prefix=${CCT_HT_PREFIX} --with-sysroot=${CCT_HT_SYSROOT} --with-pkgversion=${PKGVERSION} --with-gmp=${LIBS_HOST} --with-mpfr=${LIBS_HOST} --with-mpc=${LIBS_HOST} --with-ppl=${LIBS_HOST} --with--cloog=${LIBS_HOST} --with-host-libstdcxx="-Wl,-Bstatic,-lstdc++,-Bdynamic -lm -L${LIBS_HOST}/lib -lpwl"  --enable-languages=c,c++  --enable-__cxa_atexit --disable-multilib 1>log.txt 2>&1 || { echo "Configuring the final gcc failed"; exit 1; }
+make -j${CPU_NUM} all 1>>log.txt 2>&1 || { echo "Compiling the final gcc failed"; exit 1; }
+make install 1>>log.txt 2>&1 || { echo "Installing the final gcc failed"; exit 1; }
+
+
+#4 Build GNU debuger- gdb
+echo "==========================================================>>"
+echo "        Start building gdb for cct-host-target              "
+echo "==========================================================<<"
+
+#4.1 Build libexpat
+echo "==========================================================>>"
+echo "        Building libexpat for gdb                           "
+echo "==========================================================<<"
+mkdir -p ${BUILD_DIR}/build-expat-host
+cd ${BUILD_DIR}/build-expat-host
+${EXPAT_SRC_DIR}/configure --build=${BUILD} --host=${HOST} --prefix=${LIBS_HOST} --disable-shared 1>>log.txt 2>&1 || { echo "Configuring the expat failed"; exit 1; }
+
+make -j${CPU_NUM} 1>>log.txt 2>&1 || { echo "Compiling the expat failed"; exit 1; }
+make install 1>>log.txt 2>&1 || { echo "Installing the expat failed"; exit 1; }
+
+#4.2 Build gdb client
+echo "==========================================================>>"
+echo "        Building gdb for gdb                                "
+echo "==========================================================<<"
+mkdir -p ${BUILD_DIR}/build-gdb-cct-ht
+cd ${BUILD_DIR}/build-gdb-cct-ht
+${GDB_SRC_DIR}/configure --build=${BUILD} --host=${HOST} --target=${TARGET} --prefix=${CCT_HT_PREFIX} --with-sysroot=${CCT_HT_SYSROOT} --with-pkgversion=${PKGVERSION} --disable-werror --with-expat=yes --with-libexpat-prefix=${LIBS_HOST} 1>>log.txt 2>&1 || { echo "Configuring gdb client failed"; exit 1; }
+
+make -j${CPU_NUM} 1>>log.txt 2>&1 || { echo "Compiling gdb client failed"; exit 1; }
+make install 1>>log.txt 2>&1 || { echo "Installing gdb client failed"; exit 1; }
+
+#4.3 Build gdb server
+echo "==========================================================>>"
+echo "        Building gdbserver for gdb                           "
+echo "==========================================================<<"
+mkdir -p ${BUILD_DIR}/build-gdbserver-cct-ht
+cd ${BUILD_DIR}/build-gdbserver-cct-ht
+${GDB_SRC_DIR}/gdb/gdbserver/configure --build=${BUILD} --host=${TARGET} --target=${TARGET} --with-pkgversion=${PKGVERSION} --prefix=/usr --program-prefix='' 1>log.txt 2>&1 || { echo "Configuring gdbserver failed"; exit 1; }
+make -j${CPU_NUM} 1>>log.txt 2>&1 || { echo "Compiling gdbserver failed"; exit 1; }
+make DESTDIR=${CCT_HT_PREFIX}/debug-root install 1>>log.txt 2>&1 || { echo "Installing gdbserver failed"; exit 1; }
+
+
+#5 Strip the executable binaries to reduce package size
+STRIP=${HOST}-strip
+file=`find ${CCT_HT_PREFIX} -name \*.exe`
+for f in ${file};
 do
-
-fp=`which $t`
-echo \
-'#!/bin/bash
-exec '\'"$fp"\'' "${@}"'\
-> "${BUILDTOOLS_BIN_DIR}/${BUILD}-$t";
-chmod 755 "${BUILDTOOLS_BIN_DIR}/${BUILD}-$t";
-
+#    echo "$f"
+    ${STRIP} $f
 done
 
-PATH=${BUILDTOOLS_BIN_DIR}:${PATH}
-export PATH
+#6 Replace the soft link file, which Windows does not support, with the actual file it points to.
+link_files=`find ${CCT_HT_PREFIX} -type l`
+ls_files=`ls -l $link_files | awk '{print $9, $11}' | sed -n 's/ /:/p'`
 
-#create building dirs for each component
-SCRIPT_DIR=${TOP_DIR}/script
+for f in $ls_files;
+do
+    link_f=${f%%:*}
+    link_prefix=`dirname $link_f`
+    origin_f_sufix=${f##*:}
+    origin_f=$link_prefix/$origin_f_sufix
+    if [ -f $origin_f ];
+    then
+        rm $link_f
+        cp $origin_f $link_f
+    fi
+done
 
-#create gmp build dir
-GMP_BUILD_DIR_FOR_BUILD=${BUILD_DIR}/build-gmp-for-build
-GMP_BUILD_DIR_FOR_HOST=${BUILD_DIR}/build-gmp-for-host
-mkdir ${GMP_BUILD_DIR_FOR_BUILD}
-mkdir ${GMP_BUILD_DIR_FOR_HOST}
-cp ${SCRIPT_DIR}/gmp-configure.sh ${GMP_BUILD_DIR_FOR_BUILD}
-cp ${SCRIPT_DIR}/gmp-make.sh ${GMP_BUILD_DIR_FOR_BUILD}
-cp ${SCRIPT_DIR}/gmp-configure.sh ${GMP_BUILD_DIR_FOR_HOST}
-cp ${SCRIPT_DIR}/gmp-make.sh ${GMP_BUILD_DIR_FOR_HOST}
 
-#create mpfr build dir
-MPFR_BUILD_DIR_FOR_BUILD=${BUILD_DIR}/build-mpfr-for-build
-MPFR_BUILD_DIR_FOR_HOST=${BUILD_DIR}/build-mpfr-for-host
-mkdir ${MPFR_BUILD_DIR_FOR_BUILD}
-mkdir ${MPFR_BUILD_DIR_FOR_HOST}
-cp ${SCRIPT_DIR}/mpfr-configure.sh ${MPFR_BUILD_DIR_FOR_BUILD}
-cp ${SCRIPT_DIR}/mpfr-make.sh ${MPFR_BUILD_DIR_FOR_BUILD}
-cp ${SCRIPT_DIR}/mpfr-configure.sh ${MPFR_BUILD_DIR_FOR_HOST}
-cp ${SCRIPT_DIR}/mpfr-make.sh ${MPFR_BUILD_DIR_FOR_HOST}
-
-#create mpc build dir
-MPC_BUILD_DIR_FOR_BUILD=${BUILD_DIR}/build-mpc-for-build
-MPC_BUILD_DIR_FOR_HOST=${BUILD_DIR}/build-mpc-for-host
-mkdir ${MPC_BUILD_DIR_FOR_BUILD}
-mkdir ${MPC_BUILD_DIR_FOR_HOST}
-cp ${SCRIPT_DIR}/mpc-configure.sh ${MPC_BUILD_DIR_FOR_BUILD}
-cp ${SCRIPT_DIR}/mpc-make.sh ${MPC_BUILD_DIR_FOR_BUILD}
-cp ${SCRIPT_DIR}/mpc-configure.sh ${MPC_BUILD_DIR_FOR_HOST}
-cp ${SCRIPT_DIR}/mpc-make.sh ${MPC_BUILD_DIR_FOR_HOST}
-
-#create ppl build dir
-PPL_BUILD_DIR_FOR_BUILD=${BUILD_DIR}/build-ppl-for-build
-PPL_BUILD_DIR_FOR_HOST=${BUILD_DIR}/build-ppl-for-host
-mkdir ${PPL_BUILD_DIR_FOR_BUILD}
-mkdir ${PPL_BUILD_DIR_FOR_HOST}
-cp ${SCRIPT_DIR}/ppl-configure.sh ${PPL_BUILD_DIR_FOR_BUILD}
-cp ${SCRIPT_DIR}/ppl-make.sh ${PPL_BUILD_DIR_FOR_BUILD}
-cp ${SCRIPT_DIR}/ppl-configure.sh ${PPL_BUILD_DIR_FOR_HOST}
-cp ${SCRIPT_DIR}/ppl-make.sh ${PPL_BUILD_DIR_FOR_HOST}
-
-#create cloog-ppl build dir
-CLOOG_PPL_BUILD_DIR_FOR_BUILD=${BUILD_DIR}/build-cloog-ppl-for-build
-CLOOG_PPL_BUILD_DIR_FOR_HOST=${BUILD_DIR}/build-cloog-ppl-for-host
-mkdir ${CLOOG_PPL_BUILD_DIR_FOR_BUILD}
-mkdir ${CLOOG_PPL_BUILD_DIR_FOR_HOST}
-cp ${SCRIPT_DIR}/cloog-ppl-configure.sh ${CLOOG_PPL_BUILD_DIR_FOR_BUILD}
-cp ${SCRIPT_DIR}/cloog-ppl-make.sh ${CLOOG_PPL_BUILD_DIR_FOR_BUILD}
-cp ${SCRIPT_DIR}/cloog-ppl-configure.sh ${CLOOG_PPL_BUILD_DIR_FOR_HOST}
-cp ${SCRIPT_DIR}/cloog-ppl-make.sh ${CLOOG_PPL_BUILD_DIR_FOR_HOST}
-
-#create binutils build dir
-BINUTILS_BUILD_DIR_FOR_TARGET=${BUILD_DIR}/build-binutils-for-target
-BINUTILS_BUILD_DIR_FOR_HOST=${BUILD_DIR}/build-binutils-for-host
-BINUTILS_BUILD_DIR_FOR_FINAL=${BUILD_DIR}/build-binutils-for-final
-mkdir ${BINUTILS_BUILD_DIR_FOR_TARGET}
-mkdir ${BINUTILS_BUILD_DIR_FOR_HOST}
-mkdir ${BINUTILS_BUILD_DIR_FOR_FINAL}
-cp ${SCRIPT_DIR}/binutils-configure.sh ${BINUTILS_BUILD_DIR_FOR_TARGET}
-cp ${SCRIPT_DIR}/binutils-make.sh ${BINUTILS_BUILD_DIR_FOR_TARGET}
-cp ${SCRIPT_DIR}/binutils-configure.sh ${BINUTILS_BUILD_DIR_FOR_HOST}
-cp ${SCRIPT_DIR}/binutils-make.sh ${BINUTILS_BUILD_DIR_FOR_HOST}
-cp ${SCRIPT_DIR}/binutils-configure.sh ${BINUTILS_BUILD_DIR_FOR_FINAL}
-cp ${SCRIPT_DIR}/binutils-make.sh ${BINUTILS_BUILD_DIR_FOR_FINAL}
-
-#create mingw-header build dir
-MINGW_HEADER_BUILD_DIR=${BUILD_DIR}/build-mingw-header
-mkdir ${MINGW_HEADER_BUILD_DIR}
-cp ${SCRIPT_DIR}/mingw-header-configure.sh ${MINGW_HEADER_BUILD_DIR}
-cp ${SCRIPT_DIR}/mingw-header-make.sh ${MINGW_HEADER_BUILD_DIR}
-
-#create mingw build dir
-MINGW_BUILD_DIR=${BUILD_DIR}/build-mingw
-mkdir ${MINGW_BUILD_DIR}
-cp ${SCRIPT_DIR}/mingw-configure.sh ${MINGW_BUILD_DIR}
-cp ${SCRIPT_DIR}/mingw-make.sh ${MINGW_BUILD_DIR}
-
-#create kernel-header build dir
-KERNEL_HEADER_BUILD_DIR=${BUILD_DIR}/build-kernel-header
-mkdir ${KERNEL_HEADER_BUILD_DIR}
-cp ${SCRIPT_DIR}/kernel-header-make.sh ${KERNEL_HEADER_BUILD_DIR}
-
-#create libc-startfiles build dir
-LIBC_STARTFILES_BUILD_DIR_FOR_TARGET=${BUILD_DIR}/build-libc-startfiles-for-target
-mkdir ${LIBC_STARTFILES_BUILD_DIR_FOR_TARGET}
-cp ${SCRIPT_DIR}/libc-startfiles-configure.sh ${LIBC_STARTFILES_BUILD_DIR_FOR_TARGET}
-cp ${SCRIPT_DIR}/libc-startfiles-make.sh ${LIBC_STARTFILES_BUILD_DIR_FOR_TARGET}
-
-#create libc build dir
-LIBC_BUILD_DIR=${BUILD_DIR}/build-libc-for-target
-mkdir ${LIBC_BUILD_DIR}
-cp ${SCRIPT_DIR}/libc-configure.sh ${LIBC_BUILD_DIR}
-cp ${SCRIPT_DIR}/libc-make.sh ${LIBC_BUILD_DIR}
-
-#create core-pass-1-for-target/host build dir
-CORE_PASS_1_BUILD_DIR_FOR_TARGET=${BUILD_DIR}/build-core-pass-1-for-target
-CORE_PASS_1_BUILD_DIR_FOR_HOST=${BUILD_DIR}/build-core-pass-1-for-host
-mkdir ${CORE_PASS_1_BUILD_DIR_FOR_TARGET}
-mkdir ${CORE_PASS_1_BUILD_DIR_FOR_HOST}
-cp ${SCRIPT_DIR}/core-pass-1-configure.sh ${CORE_PASS_1_BUILD_DIR_FOR_TARGET}
-cp ${SCRIPT_DIR}/core-pass-1-make.sh ${CORE_PASS_1_BUILD_DIR_FOR_TARGET}
-cp ${SCRIPT_DIR}/core-pass-1-configure.sh ${CORE_PASS_1_BUILD_DIR_FOR_HOST}
-cp ${SCRIPT_DIR}/core-pass-1-make.sh ${CORE_PASS_1_BUILD_DIR_FOR_HOST}
-
-#create core-pass-2-for-target/host build dir
-CORE_PASS_2_BUILD_DIR_FOR_TARGET=${BUILD_DIR}/build-core-pass-2-for-target
-CORE_PASS_2_BUILD_DIR_FOR_HOST=${BUILD_DIR}/build-core-pass-2-for-host
-mkdir ${CORE_PASS_2_BUILD_DIR_FOR_TARGET}
-mkdir ${CORE_PASS_2_BUILD_DIR_FOR_HOST}
-cp ${SCRIPT_DIR}/core-pass-2-configure.sh ${CORE_PASS_2_BUILD_DIR_FOR_TARGET}
-cp ${SCRIPT_DIR}/core-pass-2-make.sh ${CORE_PASS_2_BUILD_DIR_FOR_TARGET}
-cp ${SCRIPT_DIR}/core-pass-2-configure.sh ${CORE_PASS_2_BUILD_DIR_FOR_HOST}
-cp ${SCRIPT_DIR}/core-pass-2-make.sh ${CORE_PASS_2_BUILD_DIR_FOR_HOST}
-
-#create final-gcc for host build dir
-FINAL_GCC_BUILD_DIR_FOR_HOST=${BUILD_DIR}/build-final-gcc-for-host
-mkdir ${FINAL_GCC_BUILD_DIR_FOR_HOST}
-cp ${SCRIPT_DIR}/final-gcc-configure.sh ${FINAL_GCC_BUILD_DIR_FOR_HOST}
-cp ${SCRIPT_DIR}/final-gcc-make.sh ${FINAL_GCC_BUILD_DIR_FOR_HOST}
-
-#create final-gcc for target build dir
-FINAL_GCC_BUILD_DIR_FOR_TARGET=${BUILD_DIR}/build-final-gcc-for-target
-mkdir ${FINAL_GCC_BUILD_DIR_FOR_TARGET}
-cp ${SCRIPT_DIR}/final-gcc-configure.sh ${FINAL_GCC_BUILD_DIR_FOR_TARGET}
-cp ${SCRIPT_DIR}/final-gcc-make.sh ${FINAL_GCC_BUILD_DIR_FOR_TARGET}
-
-#create final-gcc for final build dir
-FINAL_GCC_BUILD_DIR_FOR_FINAL=${BUILD_DIR}/build-final-gcc-for-final
-mkdir ${FINAL_GCC_BUILD_DIR_FOR_FINAL}
-cp ${SCRIPT_DIR}/final-gcc-configure.sh ${FINAL_GCC_BUILD_DIR_FOR_FINAL}
-cp ${SCRIPT_DIR}/final-gcc-make.sh ${FINAL_GCC_BUILD_DIR_FOR_FINAL}
-
-#create libexpat for host build dir
-LIBEXPAT_BUILD_DIR_FOR_FINAL=${BUILD_DIR}/build-libexpat-for-final
-mkdir ${LIBEXPAT_BUILD_DIR_FOR_FINAL}
-cp ${SCRIPT_DIR}/libexpat-configure.sh ${LIBEXPAT_BUILD_DIR_FOR_FINAL}
-cp ${SCRIPT_DIR}/libexpat-make.sh ${LIBEXPAT_BUILD_DIR_FOR_FINAL}
-
-#create cross-gdb for host build dir
-CROSS_GDB_BUILD_DIR_FOR_FINAL=${BUILD_DIR}/build-cross-gdb-for-final
-mkdir ${CROSS_GDB_BUILD_DIR_FOR_FINAL}
-cp ${SCRIPT_DIR}/cross-gdb-configure.sh ${CROSS_GDB_BUILD_DIR_FOR_FINAL}
-cp ${SCRIPT_DIR}/cross-gdb-make.sh ${CROSS_GDB_BUILD_DIR_FOR_FINAL}
-
-#create gdbserver for host build dir
-GDBSERVER_BUILD_DIR_FOR_TARGET=${BUILD_DIR}/build-gdbserver-for-target
-mkdir ${GDBSERVER_BUILD_DIR_FOR_TARGET}
-cp ${SCRIPT_DIR}/gdbserver-configure.sh ${GDBSERVER_BUILD_DIR_FOR_TARGET}
-cp ${SCRIPT_DIR}/gdbserver-make.sh ${GDBSERVER_BUILD_DIR_FOR_TARGET}
-
-##Start build ###
-#echo $PATH
-cp ${SCRIPT_DIR}/autobuild.sh ${BUILD_DIR}
-cd ${BUILD_DIR}
-./autobuild.sh ${build_target_toolchain} ${build_host_toolchain}
-#echo ${CPU_NUM}
-cd ${TOP_DIR}
